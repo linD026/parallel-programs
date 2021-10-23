@@ -93,7 +93,7 @@ struct rcu_head {
 
 #define RCU_DEFINE(rcuhead) \
     static struct rcu_head rcuhead;\
-    static __thread struct rcu_node __##rcuhead##_per_thread;
+    static __thread struct rcu_node *__##rcuhead##_per_thread;
 
 #define rcu_init(obj, head) __rcu_init((obj), (head), sizeof(*obj))
 
@@ -118,18 +118,18 @@ static __inline__ void __rcu_init(void *obj, struct rcu_head *head,
 #define __RCU_READ_DEREFERENCE 0x2
 
 static __inline__ void *__rcu_read_access(struct rcu_head *head,
-                                          struct rcu_node *current, int ops)
+                                          struct rcu_node **current, int ops)
 {
     switch (ops) {
     case __RCU_READ_LOCK:
-        *current = *atomic_load(&head->current);
-        atomic_fetch_add_explicit(&current->count, 1, memory_order_seq_cst);
+        *current = atomic_load(&head->current);
+        atomic_fetch_add_explicit(&(*current)->count, 1, memory_order_seq_cst);
         break;
     case __RCU_READ_UNLOCK:
-        atomic_fetch_sub_explicit(&current->count, 1, memory_order_seq_cst);
+        atomic_fetch_sub_explicit(&(*current)->count, 1, memory_order_seq_cst);
         break;
     case __RCU_READ_DEREFERENCE:
-        return READ_ONCE(current->obj);
+        return READ_ONCE((*current)->obj);
     }
     return NULL;
 }
