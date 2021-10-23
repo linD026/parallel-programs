@@ -1,6 +1,4 @@
 /* sequence lock
- * Except the seqcount, here also maintain atomic variable __write_lock
- *  for supporting the multiple writer.
  * The write side must be non-preemptive or non-interrupted, it may lead
  * read side to become starvation.
  * 
@@ -37,12 +35,12 @@ static inline void write_sequnlock(seqlock_t *lock)
     atomic_flag_clear(&lock->__write_lock, memory_order_release);
 }
 
-/* Following are the reader's operation
- * The default read (seq_begin , seqretry, etc) operations are lockless access.
- * To use the lock (blocking the others user) use "*_excl" postfix operation
+/* Following are the reader operation
+ * The default operations (seq_begin , seqretry, etc) are lockless.
+ * To use the lock (blocking the other users) use the "_excl" postfix operations
  */
 
-/* return the seq number of this time read
+/* return the seq number for this time read
  * The seqcount must be even at beginning of the read side critical section.
  */
 static inline void read_seqbegin(seqlock_t *lock)
@@ -74,9 +72,9 @@ static inline void read_sequnlock_excl(seqlock_t *lock)
     atomic_flag_clear(&lock->__write_lock, memory_order_release);
 }
 
-/* optimic of read_seqbegin, when the seqcount is odd number few times,
+/* The optimistic read_seqbegin, when the seqcount is odd number few times,
  * it turn into locked reader.
- * When the read side using the locked read, the -1 value will store into seq.
+ * When the read side use these operation, the -1 value will store into seq.
  */
 static inline void read_seqbegin_or_lock(seqlock_t *locki, int *seq)
 {

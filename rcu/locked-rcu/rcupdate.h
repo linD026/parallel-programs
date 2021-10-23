@@ -201,11 +201,11 @@ static __inline__ void synchronize_rcu(struct rcu_head *head)
 
         struct rcu_node *tmp = want_free;
         want_free = want_free->next;
-		free(tmp->obj);
+        free(tmp->obj);
         free(tmp);
     }
 
-	head->node = NULL;
+    head->node = NULL;
 
     atomic_thread_fence(memory_order_seq_cst);
 
