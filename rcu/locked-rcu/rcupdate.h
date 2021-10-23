@@ -189,27 +189,32 @@ static __inline__ void rcu_assign_pointer(struct rcu_head *head, void *newval)
 
 static __inline__ void synchronize_rcu(struct rcu_head *head)
 {
-    struct rcu_node **indirect = &head->node;
+    struct rcu_node *want_free = head->node;
 
     atomic_thread_fence(memory_order_seq_cst);
 
     spin_lock(&head->sp);
 
-    head->node = NULL;
-
-    while (READ_ONCE(*indirect)) {
-        while (atomic_load(&(*indirect)->count) != 0)
+    while (READ_ONCE(want_free)) {
+        while (atomic_load(&want_free->count) != 0)
             barrier();
 
-        struct rcu_node *tmp = *indirect;
-        indirect = &(*indirect)->next;
-        free(tmp->obj);
+        struct rcu_node *tmp = want_free;
+        want_free = want_free->next;
+		free(tmp->obj);
         free(tmp);
     }
+
+	head->node = NULL;
 
     atomic_thread_fence(memory_order_seq_cst);
 
     spin_unlock(&head->sp);
 }
 
+static __inline__ void rcu_free(struct rcu_head *head)
+{
+	free(head->current->obj);
+	free(head->current);
+}
 #endif /* __RCUPDATE_H__ */

@@ -10,7 +10,6 @@ struct test {
     int count;
 };
 
-struct test obj;
 RCU_DEFINE(rcu_head);
 
 void *reader_side(void *argv)
@@ -50,8 +49,9 @@ int main(int argc, char *argv[])
     pthread_t reader[READER_NUM];
     pthread_t updater[UPDATER_NUM];
     int i;
+	struct test *obj = (struct test *)malloc(sizeof(struct test));
 
-    rcu_init(&obj, &rcu_head);
+    rcu_init(obj, &rcu_head);
 
     for (i = 0; i < READER_NUM / 2; i++)
         pthread_create(&reader[i], NULL, reader_side, NULL);
@@ -67,6 +67,8 @@ int main(int argc, char *argv[])
 
     for (i = 0; i < UPDATER_NUM; i++)
         pthread_join(updater[i], NULL);
+
+	rcu_free(&rcu_head);
 
     return 0;
 }
