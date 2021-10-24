@@ -108,8 +108,8 @@ struct rcu_head {
     spinlock_t sp;
 } __attribute__((aligned(sizeof(void *))));
 
-#define RCU_DEFINE(rcuhead) \
-    static struct rcu_head rcuhead;\
+#define RCU_DEFINE(rcuhead)         \
+    static struct rcu_head rcuhead; \
     static __thread struct rcu_node *__##rcuhead##_per_thread;
 
 #define rcu_init(obj, head) __rcu_init((obj), (head), sizeof(*obj))
@@ -213,12 +213,13 @@ static __inline__ void synchronize_rcu(struct rcu_head *head)
     spin_lock(&head->sp);
 
     while (READ_ONCE(want_free)) {
+
         while (atomic_load(&want_free->count) != 0)
             barrier();
 
         struct rcu_node *tmp = want_free;
         want_free = want_free->next;
-        free(tmp->obj);
+        free(tmp->obj); /* call_rcu() */
         free(tmp);
     }
 
@@ -231,7 +232,7 @@ static __inline__ void synchronize_rcu(struct rcu_head *head)
 
 static __inline__ void rcu_free(struct rcu_head *head)
 {
-	free(head->current->obj);
-	free(head->current);
+    free(head->current->obj); /* call_rcu() */
+    free(head->current);
 }
 #endif /* __RCUPDATE_H__ */
