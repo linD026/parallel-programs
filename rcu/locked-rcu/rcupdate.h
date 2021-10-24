@@ -139,7 +139,7 @@ static __inline__ void *__rcu_read_access(struct rcu_head *head,
 {
     switch (ops) {
     case __RCU_READ_LOCK:
-        *current = atomic_load(&head->current);
+        *current = &READ_ONCE(head->current);
         atomic_fetch_add_explicit(&(*current)->count, 1, memory_order_seq_cst);
         break;
     case __RCU_READ_UNLOCK:
