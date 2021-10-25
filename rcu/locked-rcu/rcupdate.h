@@ -139,7 +139,7 @@ static __inline__ void *__rcu_read_access(struct rcu_head *head,
 {
     switch (ops) {
     case __RCU_READ_LOCK:
-        *current = &READ_ONCE(head->current);
+        *current = READ_ONCE(head->current);
         atomic_fetch_add_explicit(&(*current)->count, 1, memory_order_seq_cst);
         break;
     case __RCU_READ_UNLOCK:
@@ -206,15 +206,17 @@ static __inline__ void rcu_assign_pointer(struct rcu_head *head, void *newval)
 
 static __inline__ void synchronize_rcu(struct rcu_head *head)
 {
-    struct rcu_node *want_free = head->node;
+    struct rcu_node *want_free;
 
     atomic_thread_fence(memory_order_seq_cst);
 
     spin_lock(&head->sp);
 
-    while (READ_ONCE(want_free)) {
+    want_free = head->node;
 
-        while (atomic_load(&want_free->count) != 0)
+    while (want_free) {
+
+        while (READ_ONCE(want_free->count) != 0)
             barrier();
 
         struct rcu_node *tmp = want_free;
