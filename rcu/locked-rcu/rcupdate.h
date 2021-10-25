@@ -79,10 +79,10 @@ static __inline__ void spin_unlock(spinlock_t *sp)
     }
 }
 
-#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+#define ACCESS_ONCE(x) (*(volatile __typeof__(x) *)&(x))
 #define READ_ONCE(x)                     \
     ({                                   \
-        typeof(x) ___x = ACCESS_ONCE(x); \
+        __typeof__(x) ___x = ACCESS_ONCE(x); \
         ___x;                            \
     })
 #define WRITE_ONCE(x, val)      \
@@ -182,11 +182,11 @@ static __inline__ void rcu_assign_pointer(struct rcu_head *head, void *newval)
     node->count = 0;
     node->next = NULL;
 
-    // Only one updater can write in
+    /* Only one updater can write in */
     spin_lock(&head->sp);
 
     while (READ_ONCE(*current)) {
-        // we don't want to remove the same object as newval
+        /* we don't want to remove the same object as newval */
         if ((*current)->obj == newval) {
             spin_unlock(&head->sp);
             free(node);
@@ -198,7 +198,7 @@ static __inline__ void rcu_assign_pointer(struct rcu_head *head, void *newval)
     WRITE_ONCE(*current, head->current);
     atomic_store(&head->current, node);
 
-    // C11 memory model
+    /* C11 memory model */
     atomic_thread_fence(memory_order_release);
 
     spin_unlock(&head->sp);
