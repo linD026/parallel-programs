@@ -221,7 +221,7 @@ static __inline__ void synchronize_rcu(struct rcu_head *head)
 
         struct rcu_node *tmp = want_free;
         want_free = want_free->next;
-        free(tmp->obj); /* call_rcu() */
+        free(tmp->obj);
         free(tmp);
     }
 
@@ -234,7 +234,7 @@ static __inline__ void synchronize_rcu(struct rcu_head *head)
 
 static __inline__ void rcu_free(struct rcu_head *head)
 {
-    free(head->current->obj); /* call_rcu() */
+    free(head->current->obj);
     free(head->current);
 }
 #endif /* __RCUPDATE_H__ */
