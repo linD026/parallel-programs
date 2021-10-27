@@ -1,8 +1,5 @@
 /* 
  * Little Read Copy Update: A simple Classic RCU
- * 
- * Use the memory model from C11 standard and wraping the pthread lock API to
- * to build the Linux kernel API.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +16,6 @@
  * 
  * Copyright (C) 2021 linD026
  */
-
 
 #ifndef __LRCU_H__
 #define __LRCU_H__
@@ -45,9 +41,9 @@ struct lrcu_data {
     spinlock_t list_lock;
 };
 
-#define DEFINE_LRCU(name)                  \
-    struct lrcu_data name = { .list_lock = \
-                                  __SPIN_LOCK_UNLOCKED(name.list_lock) }
+#define DEFINE_LRCU(name)                                                      \
+    struct lrcu_data name = { .list_lock =                                     \
+                                      __SPIN_LOCK_UNLOCKED(name.list_lock) }
 
 static __inline__ void *__lrcu_collect_old_pointer(struct lrcu_data *lrcu_data,
                                                    void __lrcu *oldp)
@@ -79,30 +75,30 @@ static __inline__ void *__lrcu_collect_old_pointer(struct lrcu_data *lrcu_data,
  * 
  * The READ_ONCE(__l_r_rev) is to prevent the compiler optimization.
  */
-#define lrcu_assign_pointer(oldp, newp, ldp)                                 \
-    ({                                                                       \
-        uintptr_t __l_r_rev;                                                 \
-        lrcu_check_sparse(oldp, __lrcu);                                     \
-                                                                             \
-        __l_r_rev =                                                          \
-            (uintptr_t)__lrcu_collect_old_pointer(ldp, (void __lrcu *)oldp); \
-        if (READ_ONCE(__l_r_rev))                                            \
-            smp_store_release(&oldp,                                         \
-                              (typeof(*(oldp)) __force __lrcu *)(newp));     \
-                                                                             \
-        spin_unlock(&ldp->list_lock);                                        \
-        (typeof(*oldp) *)__l_r_rev;                                          \
+#define lrcu_assign_pointer(oldp, newp, ldp)                                   \
+    ({                                                                         \
+        uintptr_t __l_r_rev;                                                   \
+        lrcu_check_sparse(oldp, __lrcu);                                       \
+                                                                               \
+        __l_r_rev = (uintptr_t)__lrcu_collect_old_pointer(                     \
+                (ldp), (void __lrcu *)oldp);                                   \
+        if (READ_ONCE(__l_r_rev))                                              \
+            smp_store_release(&oldp,                                           \
+                              (typeof(*(oldp)) __force __lrcu *)(newp));       \
+                                                                               \
+        spin_unlock(&(ldp)->list_lock);                                        \
+        (typeof(*oldp) *)__l_r_rev;                                            \
     })
 
 /* lrcu_dereference() - dereference the LRCU-portected pointer
  *
  * This macro does not provide the lock checking.
  */
-#define lrcu_dereference(p)                                      \
-    ({                                                           \
-        typeof(*p) *__l_r_p = (typeof(*p) *__force)READ_ONCE(p); \
-        lrcu_check_sparse(p, __lrcu);                            \
-        __l_r_p;                                                 \
+#define lrcu_dereference(p)                                                    \
+    ({                                                                         \
+        typeof(*p) *__l_r_p = (typeof(*p) *__force)READ_ONCE(p);               \
+        lrcu_check_sparse(p, __lrcu);                                          \
+        __l_r_p;                                                               \
     })
 
 static __inline__ void lrcu_read_lock(void)
@@ -131,8 +127,8 @@ static __inline__ int lrcu_sched_init(void)
     kallsyms_lookup_name = (unsigned long (*)(const char *name))kp.addr;
     unregister_kprobe(&kp);
     lrcu_sched_setaffinity =
-        (long (*)(pid_t, const struct cpumask *))kallsyms_lookup_name(
-            "sched_setaffinity");
+            (long (*)(pid_t, const struct cpumask *))kallsyms_lookup_name(
+                    "sched_setaffinity");
 
     return 0;
 }

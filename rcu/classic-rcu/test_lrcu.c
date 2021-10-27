@@ -1,8 +1,5 @@
 /* 
  * Little Read Copy Update: A test of Classic RCU
- * 
- * Use the memory model from C11 standard and wraping the pthread lock API to
- * to build the Linux kernel API.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +16,6 @@
  * 
  * Copyright (C) 2021 linD026
  */
-
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -39,7 +35,7 @@ struct test {
     int val;
 };
 
-static __lrcu struct test *gp;
+static struct test __lrcu *gp;
 
 static int read_side(void *data)
 {
@@ -80,29 +76,36 @@ static int update_side(void *data)
 
 #define NR_READ_SIDE 20
 #define NR_UPDATE_BESIDE 5
+#define NR_TOTAL (NR_READ_SIDE + (NR_READ_SIDE / NR_UPDATE_BESIDE))
 static DEFINE_LRCU(lrcu_data);
 
 static int __init lrcu_init(void)
 {
-    struct test_lrcu t[NR_READ_SIDE + NR_UPDATE_BESIDE];
+    struct test_lrcu *t;
     int i, *setp;
 
     i = lrcu_sched_init();
     if (i != 0)
         return -1;
 
-    gp = (struct test __lrcu *)kmalloc(sizeof(struct test), GFP_KERNEL);
-    if (gp == NULL) {
-        pr_alert("lrcu_init: kmalloc failed\n");
+    t = (struct test_lrcu *)kmalloc(sizeof(struct test_lrcu) * NR_TOTAL, GFP_KERNEL);
+    if (t == NULL) {
+        pr_alert("lrcu_init: t kmalloc failed\n");
         return -1;
     }
-    
+
+    gp = (struct test __lrcu *)kmalloc(sizeof(struct test), GFP_KERNEL);
+    if (gp == NULL) {
+        pr_alert("lrcu_init: gp kmalloc failed\n");
+        return -1;
+    }
+
     setp = (int __force *)&gp->val;
     *setp = -1;
 
     smp_mb();
 
-    for (i = 0; i < NR_READ_SIDE + NR_UPDATE_BESIDE; i++) {
+    for (i = 0; i < NR_TOTAL; i++) {
         t[i].tid = i;
         t[i].ld = &lrcu_data;
         if (i % NR_UPDATE_BESIDE == 0) {
@@ -114,7 +117,7 @@ static int __init lrcu_init(void)
         }
     }
 
-    for (i = 0; i < NR_READ_SIDE + NR_UPDATE_BESIDE; i++)
+    for (i = 0; i < NR_TOTAL; i++)
         wake_up_process(t[i].task);
 
     return 0;
@@ -122,6 +125,8 @@ static int __init lrcu_init(void)
 
 static void lrcu_exit(void)
 {
+    lrcu_assign_pointer(gp, NULL, &lrcu_data);
+    synchronize_lrcu(&lrcu_data);
 }
 
 module_init(lrcu_init);
