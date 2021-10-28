@@ -48,7 +48,6 @@ static int read_side(void *data)
     pr_info("[tid %d] read %d\n", test_info->tid, cur->val);
 
     lrcu_read_unlock();
-    kfree(data);
 
     return 0;
 }
@@ -71,7 +70,6 @@ static int update_side(void *data)
 
     synchronize_lrcu(test_info->ld);
     kfree(oldp);
-    kfree(data);
 
     return 0;
 }
@@ -85,10 +83,10 @@ static void lrcu_call_back(void __lrcu *data)
 #define NR_UPDATE_BESIDE 5
 #define NR_TOTAL (NR_READ_SIDE + (NR_READ_SIDE / NR_UPDATE_BESIDE))
 static DEFINE_LRCU(lrcu_data, lrcu_call_back);
+static struct test_lrcu *t;
 
 static int __init lrcu_init(void)
 {
-    struct test_lrcu *t;
     int i, *setp;
 
     i = lrcu_sched_init();
@@ -140,6 +138,8 @@ static void lrcu_exit(void)
      * So use __call_lrcu() which is not asynchronous API.
      */
     __call_lrcu((void *)&lrcu_data);
+
+    kfree(t);
 }
 
 module_init(lrcu_init);
