@@ -153,4 +153,28 @@ static __inline__ void synchronize_lrcu(struct lrcu_data *lrcu_data)
     smp_mb();
 }
 
+typedef void (*lrcu_callback_t)(void __lrcu *);
+
+static __inline__ void call_lrcu(struct lrcu_data *lrcu_data, lrcu_callback_t func)
+{
+    int cpu, i;
+
+    for_each_online_cpu(cpu) run_on(cpu);
+
+    smp_mb();
+
+    spin_lock(&lrcu_data->list_lock);
+
+    for (i = 0; i < NR_LRCU_PROTECTED; i++) {
+        if (lrcu_data->list[i] != NULL) {
+            func(lrcu_data->list[i]);
+            lrcu_data->list[i] = NULL;
+        }
+    }
+
+    spin_unlock(&lrcu_data->list_lock);
+
+    smp_mb();
+}
+
 #endif /* __LRCU_H__ */

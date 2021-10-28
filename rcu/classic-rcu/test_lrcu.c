@@ -123,10 +123,16 @@ static int __init lrcu_init(void)
     return 0;
 }
 
+static void lrcu_call_back(void __lrcu *data)
+{
+    kfree((void *)data);
+}
+
 static void lrcu_exit(void)
 {
+    lrcu_callback_t callback = &lrcu_call_back;
     lrcu_assign_pointer(gp, NULL, &lrcu_data);
-    synchronize_lrcu(&lrcu_data);
+    call_lrcu(&lrcu_data, callback);
 }
 
 module_init(lrcu_init);
