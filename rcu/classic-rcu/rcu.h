@@ -25,6 +25,7 @@
 #include <linux/preempt.h>
 #include <linux/cpumask.h>
 #include <linux/sched.h>
+#include <linux/kthread.h>
 
 #ifdef __CHECKER__
 #define __lrcu __attribute__((noderef, address_space(__lrcu)))
@@ -36,14 +37,18 @@
 
 #define NR_LRCU_PROTECTED 10
 
+typedef void (*lrcu_callback_t)(void __lrcu *);
+
 struct lrcu_data {
     void __lrcu *list[NR_LRCU_PROTECTED];
     spinlock_t list_lock;
+    lrcu_callback_t callback;
 };
 
-#define DEFINE_LRCU(name)                                                      \
-    struct lrcu_data name = { .list_lock =                                     \
-                                      __SPIN_LOCK_UNLOCKED(name.list_lock) }
+#define DEFINE_LRCU(name, call_back)                                        \
+    struct lrcu_data name = { .list_lock =                                  \
+                                      __SPIN_LOCK_UNLOCKED(name.list_lock), \
+                              .callback = call_back }
 
 static __inline__ void *__lrcu_collect_old_pointer(struct lrcu_data *lrcu_data,
                                                    void __lrcu *oldp)
@@ -75,30 +80,30 @@ static __inline__ void *__lrcu_collect_old_pointer(struct lrcu_data *lrcu_data,
  * 
  * The READ_ONCE(__l_r_rev) is to prevent the compiler optimization.
  */
-#define lrcu_assign_pointer(oldp, newp, ldp)                                   \
-    ({                                                                         \
-        uintptr_t __l_r_rev;                                                   \
-        lrcu_check_sparse(oldp, __lrcu);                                       \
-                                                                               \
-        __l_r_rev = (uintptr_t)__lrcu_collect_old_pointer(                     \
-                (ldp), (void __lrcu *)oldp);                                   \
-        if (READ_ONCE(__l_r_rev))                                              \
-            smp_store_release(&oldp,                                           \
-                              (typeof(*(oldp)) __force __lrcu *)(newp));       \
-                                                                               \
-        spin_unlock(&(ldp)->list_lock);                                        \
-        (typeof(*oldp) *)__l_r_rev;                                            \
+#define lrcu_assign_pointer(oldp, newp, ldp)                             \
+    ({                                                                   \
+        uintptr_t __l_r_rev;                                             \
+        lrcu_check_sparse(oldp, __lrcu);                                 \
+                                                                         \
+        __l_r_rev = (uintptr_t)__lrcu_collect_old_pointer(               \
+                (ldp), (void __lrcu *)oldp);                             \
+        if (READ_ONCE(__l_r_rev))                                        \
+            smp_store_release(&oldp,                                     \
+                              (typeof(*(oldp)) __force __lrcu *)(newp)); \
+                                                                         \
+        spin_unlock(&(ldp)->list_lock);                                  \
+        (typeof(*oldp) *)__l_r_rev;                                      \
     })
 
 /* lrcu_dereference() - dereference the LRCU-portected pointer
  *
  * This macro does not provide the lock checking.
  */
-#define lrcu_dereference(p)                                                    \
-    ({                                                                         \
-        typeof(*p) *__l_r_p = (typeof(*p) *__force)READ_ONCE(p);               \
-        lrcu_check_sparse(p, __lrcu);                                          \
-        __l_r_p;                                                               \
+#define lrcu_dereference(p)                                      \
+    ({                                                           \
+        typeof(*p) *__l_r_p = (typeof(*p) *__force)READ_ONCE(p); \
+        lrcu_check_sparse(p, __lrcu);                            \
+        __l_r_p;                                                 \
     })
 
 static __inline__ void lrcu_read_lock(void)
@@ -153,10 +158,9 @@ static __inline__ void synchronize_lrcu(struct lrcu_data *lrcu_data)
     smp_mb();
 }
 
-typedef void (*lrcu_callback_t)(void __lrcu *);
-
-static __inline__ void call_lrcu(struct lrcu_data *lrcu_data, lrcu_callback_t func)
+static __inline__ int __call_lrcu(void *data)
 {
+    struct lrcu_data *lrcu_data = (struct lrcu_data *)data;
     int cpu, i;
 
     for_each_online_cpu(cpu) run_on(cpu);
@@ -167,7 +171,7 @@ static __inline__ void call_lrcu(struct lrcu_data *lrcu_data, lrcu_callback_t fu
 
     for (i = 0; i < NR_LRCU_PROTECTED; i++) {
         if (lrcu_data->list[i] != NULL) {
-            func(lrcu_data->list[i]);
+            lrcu_data->callback(lrcu_data->list[i]);
             lrcu_data->list[i] = NULL;
         }
     }
@@ -175,6 +179,26 @@ static __inline__ void call_lrcu(struct lrcu_data *lrcu_data, lrcu_callback_t fu
     spin_unlock(&lrcu_data->list_lock);
 
     smp_mb();
+
+    do_exit(0);
+}
+
+/* TODO: Fix the .data storage problem
+ * the lrcu_data only provide the .data sotrage class, it cannot pass
+ * to another thread.
+ * It will be like:
+ * 
+ * struct lrcu_data *p = kmalloc();
+ * lrcu_data_init(p);
+ * do_some_thing();
+ * call_lrcu(p);
+ * all_finish();
+ * kfree(p);
+ */
+static __inline__ void call_lrcu(struct lrcu_data *lrcu_data)
+{
+    smp_mb();
+    kthread_run(__call_lrcu, (void *)lrcu_data, "kthread: call_lrcu");
 }
 
 #endif /* __LRCU_H__ */

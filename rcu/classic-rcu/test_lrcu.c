@@ -48,6 +48,7 @@ static int read_side(void *data)
     pr_info("[tid %d] read %d\n", test_info->tid, cur->val);
 
     lrcu_read_unlock();
+    kfree(data);
 
     return 0;
 }
@@ -70,14 +71,20 @@ static int update_side(void *data)
 
     synchronize_lrcu(test_info->ld);
     kfree(oldp);
+    kfree(data);
 
     return 0;
+}
+
+static void lrcu_call_back(void __lrcu *data)
+{
+    kfree((void *)data);
 }
 
 #define NR_READ_SIDE 20
 #define NR_UPDATE_BESIDE 5
 #define NR_TOTAL (NR_READ_SIDE + (NR_READ_SIDE / NR_UPDATE_BESIDE))
-static DEFINE_LRCU(lrcu_data);
+static DEFINE_LRCU(lrcu_data, lrcu_call_back);
 
 static int __init lrcu_init(void)
 {
@@ -88,7 +95,8 @@ static int __init lrcu_init(void)
     if (i != 0)
         return -1;
 
-    t = (struct test_lrcu *)kmalloc(sizeof(struct test_lrcu) * NR_TOTAL, GFP_KERNEL);
+    t = (struct test_lrcu *)kmalloc(sizeof(struct test_lrcu) * NR_TOTAL,
+                                    GFP_KERNEL);
     if (t == NULL) {
         pr_alert("lrcu_init: t kmalloc failed\n");
         return -1;
@@ -123,16 +131,15 @@ static int __init lrcu_init(void)
     return 0;
 }
 
-static void lrcu_call_back(void __lrcu *data)
-{
-    kfree((void *)data);
-}
-
 static void lrcu_exit(void)
 {
-    lrcu_callback_t callback = &lrcu_call_back;
     lrcu_assign_pointer(gp, NULL, &lrcu_data);
-    call_lrcu(&lrcu_data, callback);
+
+    /* the call_lrcu() won't work at .data storage class because
+     * of the .data storage cannot pass to the other threads.
+     * So use __call_lrcu() which is not asynchronous API.
+     */
+    __call_lrcu((void *)&lrcu_data);
 }
 
 module_init(lrcu_init);
