@@ -196,7 +196,7 @@ static __inline__ void rcu_assign_pointer(struct rcu_head *head, void *newval)
     }
 
     WRITE_ONCE(*current, head->current);
-    atomic_store(&head->current, node);
+    WRITE_ONCE(head->current, node);
 
     /* C11 memory model */
     atomic_thread_fence(memory_order_release);
