@@ -28,6 +28,12 @@
 
 #include "rcupdate.h"
 
+#if defined(__linux__)
+#define current_tid() (int)gettid()
+#else
+#define current_tid() 0xFFFF & (int)pthread_self()
+#endif
+
 struct test {
     int count;
 };
@@ -42,7 +48,7 @@ void *reader_side(void *argv)
 
     tmp = rcu_dereference(rcu_head);
 
-    printf("[reader %d] %d\n", gettid(), tmp->count);
+    printf("[reader %d] %d\n", current_tid(), tmp->count);
 
     rcu_read_unlock(rcu_head);
 
@@ -52,7 +58,7 @@ void *reader_side(void *argv)
 void *updater_side(void *argv)
 {
     struct test *newval = (struct test *)malloc(sizeof(struct test));
-    newval->count = (int)gettid();
+    newval->count = current_tid();
 
     printf("[updater %d]\n", newval->count);
 
@@ -72,6 +78,7 @@ int main(int argc, char *argv[])
     pthread_t updater[UPDATER_NUM];
     int i;
 	struct test *obj = (struct test *)malloc(sizeof(struct test));
+    obj->count = 0;
 
     rcu_init(obj, &rcu_head);
 
