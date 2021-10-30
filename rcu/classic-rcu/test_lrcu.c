@@ -60,7 +60,7 @@ static int update_side(void *data)
     newp = (struct test *)kmalloc(sizeof(struct test), GFP_KERNEL);
     if (newp == NULL) {
         pr_alert("update_side %d:kmalloc failed\n", test_info->tid);
-        return -1;
+        return -ENOMEM;
     }
     newp->val = test_info->tid;
 
@@ -74,9 +74,9 @@ static int update_side(void *data)
     return 0;
 }
 
-static void lrcu_call_back(void __lrcu *data)
+static void lrcu_call_back(void *data)
 {
-    kfree((void *)data);
+    kfree(data);
 }
 
 #define NR_READ_SIDE 20
@@ -97,13 +97,13 @@ static int __init lrcu_init(void)
                                     GFP_KERNEL);
     if (t == NULL) {
         pr_alert("lrcu_init: t kmalloc failed\n");
-        return -1;
+        return -ENOMEM;
     }
 
     gp = (struct test __lrcu *)kmalloc(sizeof(struct test), GFP_KERNEL);
     if (gp == NULL) {
         pr_alert("lrcu_init: gp kmalloc failed\n");
-        return -1;
+        return -ENOMEM;
     }
 
     setp = (int __force *)&gp->val;

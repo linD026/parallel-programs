@@ -37,7 +37,7 @@
 
 #define NR_LRCU_PROTECTED 10
 
-typedef void (*lrcu_callback_t)(void __lrcu *);
+typedef void (*lrcu_callback_t)(void *);
 
 struct lrcu_data {
     void __lrcu *list[NR_LRCU_PROTECTED];
@@ -171,7 +171,7 @@ static __inline__ int __call_lrcu(void *data)
 
     for (i = 0; i < NR_LRCU_PROTECTED; i++) {
         if (lrcu_data->list[i] != NULL) {
-            lrcu_data->callback(lrcu_data->list[i]);
+            lrcu_data->callback((void __force *)lrcu_data->list[i]);
             lrcu_data->list[i] = NULL;
         }
     }
