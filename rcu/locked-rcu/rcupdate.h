@@ -1,8 +1,7 @@
 /* 
  * Read Copy Update: A reference count based simple RCU
  * 
- * Use the memory model from C11 standard and wraping the pthread lock API to
- * to build the Linux kernel API.
+ * Use the memory model from C11 standard.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +25,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../api.h"
+
 /* For Sparse 
  */
 #ifdef __CHECKER__
@@ -35,61 +36,6 @@
 #define __rcu
 #define rcu_check_sparse(p, space)
 #endif /* __CHECKER__ */
-
-/* lock primitives from pthread and compiler primitives
- */
-
-#include <pthread.h>
-
-typedef pthread_mutex_t spinlock_t;
-
-#define DEFINE_SPINLOCK(lock) spinlock_t lock = PTHREAD_MUTEX_INITIALIZER;
-#define SPINLOCK_INIT PTHREAD_MUTEX_INITIALIZER
-
-static __inline__ void spin_lock_init(spinlock_t *sp)
-{
-    int ret;
-
-    ret = pthread_mutex_init(sp, NULL);
-    if (ret != 0) {
-        fprintf(stderr, "spin_lock_init::pthread_mutex_init %d\n", ret);
-        abort();
-    }
-}
-
-static __inline__ void spin_lock(spinlock_t *sp)
-{
-    int ret;
-
-    ret = pthread_mutex_lock(sp);
-    if (ret != 0) {
-        fprintf(stderr, "spin_lock:pthread_mutex_lock %d\n", ret);
-        abort();
-    }
-}
-
-static __inline__ void spin_unlock(spinlock_t *sp)
-{
-    int ret;
-
-    ret = pthread_mutex_unlock(sp);
-    if (ret != 0) {
-        fprintf(stderr, "spin_unlock:pthread_mutex_unlock %d\n", ret);
-        abort();
-    }
-}
-
-#define ACCESS_ONCE(x) (*(volatile __typeof__(x) *)&(x))
-#define READ_ONCE(x)                     \
-    ({                                   \
-        __typeof__(x) ___x = ACCESS_ONCE(x); \
-        ___x;                            \
-    })
-#define WRITE_ONCE(x, val)      \
-    do {                        \
-        ACCESS_ONCE(x) = (val); \
-    } while (0)
-#define barrier() __asm__ __volatile__("" : : : "memory")
 
 /* RCU side */
 
