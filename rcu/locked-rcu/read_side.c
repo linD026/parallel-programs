@@ -1,5 +1,5 @@
 /* 
- * Read Copy Update: A benchmark of global reference count of simple RCU
+ * Read side benchmark: A benchmark of global reference count of simple RCU
  *
  * Use the memory model from C11 standard and wraping the pthread lock API to
  * to build the Linux kernel API.
@@ -27,6 +27,7 @@
 #include <pthread.h>
 
 #include "rcupdate.h"
+#include "../trace_timer.h"
 
 #if defined(__linux__)
 #define current_tid() (int)gettid()
@@ -40,7 +41,7 @@ struct test {
 
 RCU_DEFINE(rcu_head);
 
-void *reader_side(void *argv)
+static __inline__ void read_rcu(void)
 {
     struct test __allow_unused *tmp;
 
@@ -48,9 +49,12 @@ void *reader_side(void *argv)
 
     tmp = rcu_dereference(rcu_head);
 
-    //printf("[reader %d] %d\n", current_tid(), tmp->count);
-
     rcu_read_unlock(rcu_head);
+}
+
+void *reader_side(void *argv)
+{
+    time_check_loop(read_rcu(), 1000);
 
     pthread_exit(NULL);
 }
@@ -69,8 +73,8 @@ void *updater_side(void *argv)
     pthread_exit(NULL);
 }
 
-#define READER_NUM 10
-#define UPDATER_NUM 1
+#define READER_NUM 1000
+#define UPDATER_NUM 5
 
 static __inline__ void benchmark(void)
 {
@@ -104,6 +108,7 @@ static __inline__ void benchmark(void)
 
 int main(int argc, char *argv[])
 {
-    time_check_loop(benchmark(), 100);
+    printf("locked rcu read side: reader %d, updater %d\n", READER_NUM, UPDATER_NUM);
+    benchmark();
     return 0;
 }

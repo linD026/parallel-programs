@@ -1,8 +1,5 @@
 /* 
- * Read Copy Update: A benchmark of global reference count of simple RCU
- *
- * Use the memory model from C11 standard and wraping the pthread lock API to
- * to build the Linux kernel API.
+ * Read Copy Update: A benchmark of per-thread of reference count RCU
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,45 +23,49 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#include "rcupdate.h"
+#include "thrd_rcu.h"
 
 #if defined(__linux__)
 #define current_tid() (int)gettid()
 #else
-#define current_tid() 0xFFFF & (unsigned long)pthread_self()
+#define current_tid() 0xFFFFFF & (unsigned long)pthread_self()
 #endif
 
 struct test {
     int count;
 };
 
-RCU_DEFINE(rcu_head);
+struct test *foo;
 
 void *reader_side(void *argv)
 {
     struct test __allow_unused *tmp;
 
-    rcu_read_lock(rcu_head);
+    rcu_init();
 
-    tmp = rcu_dereference(rcu_head);
+    rcu_read_lock();
+
+    tmp = rcu_dereference(foo);
 
     //printf("[reader %d] %d\n", current_tid(), tmp->count);
 
-    rcu_read_unlock(rcu_head);
+    rcu_read_unlock();
 
     pthread_exit(NULL);
 }
 
 void *updater_side(void *argv)
 {
+    struct test *oldp;
     struct test *newval = (struct test *)malloc(sizeof(struct test));
     newval->count = current_tid();
 
     //printf("[updater %d]\n", newval->count);
 
-    rcu_assign_pointer(&rcu_head, (void *)newval);
+    oldp = rcu_assign_pointer(foo, newval);
 
-    synchronize_rcu(&rcu_head);
+    synchronize_rcu();
+    free(oldp);
 
     pthread_exit(NULL);
 }
@@ -77,10 +78,8 @@ static __inline__ void benchmark(void)
     pthread_t reader[READER_NUM];
     pthread_t updater[UPDATER_NUM];
     int i;
-    struct test *obj = (struct test *)malloc(sizeof(struct test));
-    obj->count = 0;
-
-    rcu_init(obj, &rcu_head);
+    foo = (struct test *)malloc(sizeof(struct test));
+    foo->count = 0;
 
     for (i = 0; i < READER_NUM / 2; i++)
         pthread_create(&reader[i], NULL, reader_side, NULL);
@@ -97,7 +96,7 @@ static __inline__ void benchmark(void)
     for (i = 0; i < UPDATER_NUM; i++)
         pthread_join(updater[i], NULL);
 
-    rcu_free(&rcu_head);
+    rcu_clean();
 }
 
 #include "../trace_timer.h"

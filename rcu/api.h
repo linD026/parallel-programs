@@ -66,15 +66,19 @@ static __inline__ void spin_unlock(spinlock_t *sp)
 }
 
 #define ACCESS_ONCE(x) (*(volatile __typeof__(x) *)&(x))
-#define READ_ONCE(x)                     \
-    ({                                   \
+#define READ_ONCE(x)                         \
+    ({                                       \
         __typeof__(x) ___x = ACCESS_ONCE(x); \
-        ___x;                            \
+        ___x;                                \
     })
 #define WRITE_ONCE(x, val)      \
     do {                        \
         ACCESS_ONCE(x) = (val); \
     } while (0)
 #define barrier() __asm__ __volatile__("" : : : "memory")
+
+#define __allow_unused __attribute__((unused))
+
+#define smp_mb() __asm__ __volatile__("mfence" : : : "memory")
 
 #endif /* __RCU_COMMON_API_H__ */

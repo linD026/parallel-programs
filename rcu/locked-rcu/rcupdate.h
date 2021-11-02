@@ -1,5 +1,5 @@
 /* 
- * Read Copy Update: A reference count based simple RCU
+ * Read Copy Update: A global reference count of simple RCU
  * 
  * Use the memory model from C11 standard.
  *
@@ -161,7 +161,6 @@ static __inline__ void synchronize_rcu(struct rcu_head *head)
     want_free = head->node;
 
     while (want_free) {
-
         while (READ_ONCE(want_free->count) != 0)
             barrier();
 
