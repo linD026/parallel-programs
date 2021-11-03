@@ -96,6 +96,8 @@ static __inline__ void benchmark(void)
     for (i = 0; i < UPDATER_NUM; i++)
         pthread_join(updater[i], NULL);
 
+    free(foo);
+
     rcu_clean();
 }
 
@@ -103,6 +105,6 @@ static __inline__ void benchmark(void)
 
 int main(int argc, char *argv[])
 {
-    time_check_loop(benchmark(), 100);
+    time_check_loop(benchmark(), 1000);
     return 0;
 }

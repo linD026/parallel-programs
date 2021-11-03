@@ -104,6 +104,6 @@ static __inline__ void benchmark(void)
 
 int main(int argc, char *argv[])
 {
-    time_check_loop(benchmark(), 100);
+    time_check_loop(benchmark(), 1000);
     return 0;
 }

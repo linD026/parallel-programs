@@ -50,7 +50,7 @@ struct rcu_data {
 
 // Easly to use it.
 #define __rcu_thrd_idx rcu_data.rcu_thrd_nesting_idx
-#define __rcu_thrd_nesting(ptr) \
+#define __rcu_thrd_nesting(ptr)                                                \
     ptr->rcu_nesting[READ_ONCE(__rcu_thrd_idx) & 0x01]
 #define rcu_thrd_nesting __rcu_thrd_nesting(__rcu_per_thrd_ptr)
 
@@ -154,32 +154,34 @@ static __inline__ void synchronize_rcu(void)
      */
     for (node = rcu_data.head; node != NULL; node = node->next) {
         while (READ_ONCE(__rcu_thrd_nesting(node)) & 0x1) {
-            //while (__atomic_load_n(&__rcu_thrd_nesting(node), __ATOMIC_RELAXED) & 0x1) {
-            //usleep(10);
-            barrier();
+            //while (__atomic_load_n(&__rcu_thrd_nesting(node),
+            //                       __ATOMIC_RELAXED) &
+            //       0x1) {
+                //usleep(10);
+                barrier();
+            }
         }
+
+        /* Going to next grace period
+     */
+        __atomic_fetch_add(&__rcu_thrd_idx, 1, __ATOMIC_RELEASE);
+
+        spin_unlock(&rcu_data.sp);
+
+        __atomic_thread_fence(__ATOMIC_SEQ_CST);
     }
 
-    /* Going to next grace period
-     */
-    __atomic_fetch_add(&__rcu_thrd_idx, 1, __ATOMIC_RELEASE);
-
-    spin_unlock(&rcu_data.sp);
-
-    __atomic_thread_fence(__ATOMIC_SEQ_CST);
-}
-
-#define rcu_dereference(p)                      \
-    ({                                          \
-        __typeof__(*p) *__r_d_p = READ_ONCE(p); \
-        __r_d_p;                                \
+#define rcu_dereference(p)                                                     \
+    ({                                                                         \
+        __typeof__(*p) *__r_d_p = READ_ONCE(p);                                \
+        __r_d_p;                                                               \
     })
 
-#define rcu_assign_pointer(p, v)                                \
-    ({                                                          \
-        __typeof__(*p) *__r_a_p =                               \
-                __atomic_exchange_n(&(p), v, __ATOMIC_RELEASE); \
-        __r_a_p;                                                \
+#define rcu_assign_pointer(p, v)                                               \
+    ({                                                                         \
+        __typeof__(*p) *__r_a_p =                                              \
+                __atomic_exchange_n(&(p), v, __ATOMIC_RELEASE);                \
+        __r_a_p;                                                               \
     })
 
 #endif /* __THRD_RCU_H__ */
