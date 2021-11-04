@@ -30,9 +30,9 @@ struct test {
     int count;
 };
 
-struct test *foo;
+static struct test __rcu *foo;
 
-void *reader_side(void *argv)
+static void *reader_side(void *argv)
 {
     struct test __allow_unused *tmp;
 
@@ -60,7 +60,7 @@ static __inline__ void update_rcu(void)
     free(oldp);
 }
 
-void *updater_side(void *argv)
+static void *updater_side(void *argv)
 {
     time_check_loop(update_rcu(), 1000);
 
@@ -75,8 +75,8 @@ static __inline__ void benchmark(void)
     pthread_t reader[READER_NUM];
     pthread_t updater[UPDATER_NUM];
     int i;
-    foo = (struct test *)malloc(sizeof(struct test));
-    foo->count = 0;
+    foo = (struct test __rcu *)malloc(sizeof(struct test));
+    rcu_uncheck(foo)->count = 0;
 
     for (i = 0; i < READER_NUM / 2; i++)
         pthread_create(&reader[i], NULL, reader_side, NULL);
@@ -92,6 +92,8 @@ static __inline__ void benchmark(void)
 
     for (i = 0; i < UPDATER_NUM; i++)
         pthread_join(updater[i], NULL);
+
+    free(rcu_uncheck(foo));
 
     rcu_clean();
 }

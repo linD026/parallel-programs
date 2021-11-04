@@ -31,6 +31,20 @@
 #include <unistd.h>
 #include "../api.h"
 
+#ifdef __CHECKER__
+#define __rcu __attribute__((noderef, address_space(__rcu)))
+#define rcu_check_sparse(p, space) ((void)(((typeof(*p) space *)p) == p))
+#define __force __attribute__((force))
+#define rcu_uncheck(p) ((__typeof__(*p) __force *)p)
+#define rcu_check(p) ((__typeof__(*p) __force __rcu *)p)
+#else
+#define __rcu
+#define rcu_check_sparse(p, space)
+#define __force
+#define rcu_uncheck(p) p
+#define rcu_check(p) p
+#endif /* __CHECKER__ */
+
 /* Avoid false sharing
  */
 #define __rcu_aligned __attribute__((aligned(128)))
@@ -173,14 +187,18 @@ static __inline__ void synchronize_rcu(void)
 
 #define rcu_dereference(p)                                                     \
     ({                                                                         \
-        __typeof__(*p) *__r_d_p = READ_ONCE(p);                                \
+        __typeof__(*p) *__r_d_p = (__typeof__(*p) __force *)READ_ONCE(p);      \
+        rcu_check_sparse(p, __rcu);                                            \
         __r_d_p;                                                               \
     })
 
 #define rcu_assign_pointer(p, v)                                               \
     ({                                                                         \
         __typeof__(*p) *__r_a_p =                                              \
-                __atomic_exchange_n(&(p), v, __ATOMIC_RELEASE);                \
+                (__typeof__(*p) __force *)__atomic_exchange_n(                 \
+                        &(p), (__typeof__(*(p)) __force __rcu *)v,             \
+                        __ATOMIC_RELEASE);                                     \
+        rcu_check_sparse(p, __rcu);                                            \
         __r_a_p;                                                               \
     })
 

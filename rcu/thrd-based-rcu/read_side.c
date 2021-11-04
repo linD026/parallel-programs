@@ -30,7 +30,7 @@ struct test {
     int count;
 };
 
-struct test *foo;
+static struct test __rcu *foo;
 
 static __inline__ void read_rcu(void)
 {
@@ -43,7 +43,7 @@ static __inline__ void read_rcu(void)
     rcu_read_unlock();
 }
 
-void *reader_side(void *argv)
+static void *reader_side(void *argv)
 {
     rcu_init();
 
@@ -54,7 +54,7 @@ void *reader_side(void *argv)
     pthread_exit(NULL);
 }
 
-void *updater_side(void *argv)
+static void *updater_side(void *argv)
 {
     struct test *oldp;
     struct test *newval = (struct test *)malloc(sizeof(struct test));
@@ -78,8 +78,8 @@ static __inline__ void benchmark(void)
     pthread_t reader[READER_NUM];
     pthread_t updater[UPDATER_NUM];
     int i;
-    foo = (struct test *)malloc(sizeof(struct test));
-    foo->count = 0;
+    foo = (struct test __rcu *)malloc(sizeof(struct test));
+    rcu_uncheck(foo)->count = 0;
 
     smp_mb();
 
@@ -97,6 +97,8 @@ static __inline__ void benchmark(void)
 
     for (i = 0; i < READER_NUM; i++)
         pthread_join(reader[i], NULL);
+
+    free(rcu_uncheck(foo));
 
     rcu_clean();
 }

@@ -30,9 +30,9 @@ struct test {
     struct list_head node;
 };
 
-struct list_head head;
+static struct list_head head;
 
-struct test *test_alloc(int val)
+static struct test *test_alloc(int val)
 {
     struct test *new = (struct test *)malloc(sizeof(struct test));
     if (!new) {
@@ -46,7 +46,7 @@ struct test *test_alloc(int val)
     return new;
 }
 
-void *reader_side(void *argv)
+static void *reader_side(void *argv)
 {
     struct test __allow_unused *tmp;
     struct list_head *node;
@@ -55,8 +55,9 @@ void *reader_side(void *argv)
 
     rcu_read_lock();
 
-    list_for_each(node, &head) {
-       tmp = container_of(node, struct test, node);
+    list_for_each(node, &head)
+    {
+        tmp = list_entry_rcu(node, struct test, node);
     }
 
     rcu_read_unlock();
@@ -64,10 +65,9 @@ void *reader_side(void *argv)
     pthread_exit(NULL);
 }
 
-void *updater_side(void *argv)
+static void *updater_side(void *argv)
 {
-    struct test *newval = (struct test *)malloc(sizeof(struct test));
-    newval->count = current_tid();
+    struct test *newval = test_alloc(current_tid());
 
     list_add_tail_rcu(&newval->node, &head);
     synchronize_rcu();
@@ -102,7 +102,8 @@ static __inline__ void benchmark(void)
     for (i = 0; i < UPDATER_NUM; i++)
         pthread_join(updater[i], NULL);
 
-    list_for_each_safe(pos, node, &head) {
+    list_for_each_safe(pos, node, &head)
+    {
         tmp = container_of(pos, struct test, node);
         free(tmp);
     }
@@ -118,4 +119,3 @@ int main(int argc, char *argv[])
     time_check_loop(benchmark(), 1000);
     return 0;
 }
-

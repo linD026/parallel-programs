@@ -14,9 +14,11 @@
     The user space rcu with global reference count.
 - **classic rcu**: 
     The kernel space rcu with preemptible kernel.
+	Support sparse checking.
 - **thrd-based rcu**: 
     The user space rcu with thread-local-storage reference count.
 	Implement concurrency linked-list.
+	Support sparse checking.
 
 ### Sequence Lock (Seqlock)
 - **seqlock**: 
