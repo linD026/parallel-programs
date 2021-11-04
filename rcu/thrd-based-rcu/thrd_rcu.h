@@ -157,19 +157,19 @@ static __inline__ void synchronize_rcu(void)
             //while (__atomic_load_n(&__rcu_thrd_nesting(node),
             //                       __ATOMIC_RELAXED) &
             //       0x1) {
-                //usleep(10);
-                barrier();
-            }
+            //usleep(10);
+            barrier();
         }
-
-        /* Going to next grace period
-     */
-        __atomic_fetch_add(&__rcu_thrd_idx, 1, __ATOMIC_RELEASE);
-
-        spin_unlock(&rcu_data.sp);
-
-        __atomic_thread_fence(__ATOMIC_SEQ_CST);
     }
+
+    /* Going to next grace period
+     */
+    __atomic_fetch_add(&__rcu_thrd_idx, 1, __ATOMIC_RELEASE);
+
+    spin_unlock(&rcu_data.sp);
+
+    __atomic_thread_fence(__ATOMIC_SEQ_CST);
+}
 
 #define rcu_dereference(p)                                                     \
     ({                                                                         \

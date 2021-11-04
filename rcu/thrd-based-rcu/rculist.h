@@ -64,7 +64,8 @@ static inline void list_del_rcu(struct list_head *node)
 
 #define list_for_each_from(pos, head) for (; pos != (head); pos = pos->next)
 
-#define list_for_each_safe(pos, n, head)                                \
-    for (pos = (head)->next, n = pos->next; pos != (head); pos = n, n = pos->next)
+#define list_for_each_safe(pos, n, head)                                       \
+    for (pos = (head)->next, n = pos->next; pos != (head);                     \
+         pos = n, n = pos->next)
 
 #endif /* __RCULIST_H__ */
