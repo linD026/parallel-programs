@@ -1,5 +1,5 @@
 /* 
- * skiplist: The sequence program of skip list implementation
+ * skiplist: The sequential program of skip list implementation
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
