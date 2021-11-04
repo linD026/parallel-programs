@@ -3,8 +3,8 @@ cflags = -g
 cflags += -Wall
 cflags += -lpthread
 clfags += -std=c89
-cflags += -fsanitize=thread
-#cflags += -fsanitize=address
+#cflags += -fsanitize=thread
+cflags += -fsanitize=address
 
 all:
 	$(CC) -o test main.c $(cflags)
@@ -14,6 +14,9 @@ read:
 
 update:
 	$(CC) -o test update_side.c $(cflags)
+
+list:
+	$(CC) -o test test_rculist.c $(cflags)
 
 clean:
 	rm -f test 

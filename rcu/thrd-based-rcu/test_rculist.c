@@ -1,5 +1,5 @@
 /* 
- * Read side benchmark: A benchmark of per-thread of refcnt RCU
+ * Read Copy Update: A benchmark of per-thread of reference count RCU
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,65 +23,69 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#include "thrd_rcu.h"
-#include "../trace_timer.h"
+#include "rculist.h"
 
 struct test {
     int count;
+    struct list_head node;
 };
 
-struct test *foo;
+struct list_head head;
 
-static __inline__ void read_rcu(void)
+struct test *test_alloc(int val)
 {
-    struct test __allow_unused *tmp;
+    struct test *new = (struct test *)malloc(sizeof(struct test));
+    if (!new) {
+        fprintf(stderr, "test_alloc failed\n");
+        abort();
+    }
 
-    rcu_read_lock();
+    new->count = val;
+    list_init_rcu(&new->node);
 
-    tmp = rcu_dereference(foo);
-
-    rcu_read_unlock();
+    return new;
 }
 
 void *reader_side(void *argv)
 {
+    struct test __allow_unused *tmp;
+    struct list_head *node;
+
     rcu_init();
 
-    time_check_loop(read_rcu(), 1000);
+    rcu_read_lock();
 
-    smp_mb();
+    list_for_each(node, &head) {
+       tmp = container_of(node, struct test, node);
+    }
+
+    rcu_read_unlock();
 
     pthread_exit(NULL);
 }
 
 void *updater_side(void *argv)
 {
-    struct test *oldp;
     struct test *newval = (struct test *)malloc(sizeof(struct test));
     newval->count = current_tid();
 
-    //printf("[updater %d]\n", newval->count);
-
-    oldp = rcu_assign_pointer(foo, newval);
-
+    list_add_tail_rcu(&newval->node, &head);
     synchronize_rcu();
-    free(oldp);
 
     pthread_exit(NULL);
 }
 
 #define READER_NUM 10
-#define UPDATER_NUM 5
+#define UPDATER_NUM 1
 
 static __inline__ void benchmark(void)
 {
     pthread_t reader[READER_NUM];
     pthread_t updater[UPDATER_NUM];
+    struct list_head *node, *pos;
+    struct test *tmp;
     int i;
-    foo = (struct test *)malloc(sizeof(struct test));
-    foo->count = 0;
-
-    smp_mb();
+    list_init_rcu(&head);
 
     for (i = 0; i < READER_NUM / 2; i++)
         pthread_create(&reader[i], NULL, reader_side, NULL);
@@ -92,19 +96,26 @@ static __inline__ void benchmark(void)
     for (i = READER_NUM / 2; i < READER_NUM; i++)
         pthread_create(&reader[i], NULL, reader_side, NULL);
 
+    for (i = 0; i < READER_NUM; i++)
+        pthread_join(reader[i], NULL);
+
     for (i = 0; i < UPDATER_NUM; i++)
         pthread_join(updater[i], NULL);
 
-    for (i = 0; i < READER_NUM; i++)
-        pthread_join(reader[i], NULL);
+    list_for_each_safe(pos, node, &head) {
+        tmp = container_of(pos, struct test, node);
+        free(tmp);
+    }
+    list_init_rcu(&head);
 
     rcu_clean();
 }
 
+#include "../trace_timer.h"
+
 int main(int argc, char *argv[])
 {
-    printf("thrd rcu read side: reader %d, updater %d\n", READER_NUM,
-           UPDATER_NUM);
-    benchmark();
+    time_check_loop(benchmark(), 1000);
     return 0;
 }
+

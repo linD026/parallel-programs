@@ -28,12 +28,6 @@
 
 #include "rcupdate.h"
 
-#if defined(__linux__)
-#define current_tid() (int)gettid()
-#else
-#define current_tid() 0xFFFF & (unsigned long)pthread_self()
-#endif
-
 struct test {
     int count;
 };

@@ -26,12 +26,6 @@
 #include "thrd_rcu.h"
 #include "../trace_timer.h"
 
-#if defined(__linux__)
-#define current_tid() (int)gettid()
-#else
-#define current_tid() 0xFFFFFF & (unsigned long)pthread_self()
-#endif
-
 struct test {
     int count;
 };

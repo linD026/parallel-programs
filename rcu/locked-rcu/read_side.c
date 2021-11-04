@@ -29,12 +29,6 @@
 #include "rcupdate.h"
 #include "../trace_timer.h"
 
-#if defined(__linux__)
-#define current_tid() (int)gettid()
-#else
-#define current_tid() 0xFFFF & (unsigned long)pthread_self()
-#endif
-
 struct test {
     int count;
 };
@@ -73,7 +67,7 @@ void *updater_side(void *argv)
     pthread_exit(NULL);
 }
 
-#define READER_NUM 1000
+#define READER_NUM 10
 #define UPDATER_NUM 5
 
 static __inline__ void benchmark(void)
