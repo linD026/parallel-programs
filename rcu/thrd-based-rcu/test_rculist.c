@@ -1,5 +1,5 @@
 /* 
- * Read Copy Update: A benchmark of per-thread of reference count RCU
+ * thrd-RCU list: A benchmark of thrd-rcu linked list
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
