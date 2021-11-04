@@ -12,7 +12,8 @@
         const __typeof__(((type *)0)->member) *__mptr = (ptr);                 \
         (type *)((char *)__mptr - offsetof(type, member));                     \
     })
-#define list_entry_rcu(ptr, type, member) container_of(READ_ONCE(ptr), type, member)
+#define list_entry_rcu(ptr, type, member)                                      \
+    container_of(READ_ONCE(ptr), type, member)
 
 #define list_next_rcu(n) (*((struct list_head __rcu **)(&(n)->next)))
 
