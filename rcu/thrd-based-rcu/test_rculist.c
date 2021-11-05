@@ -75,9 +75,6 @@ static void *updater_side(void *argv)
     pthread_exit(NULL);
 }
 
-#define READER_NUM 10
-#define UPDATER_NUM 1
-
 static __inline__ void benchmark(void)
 {
     pthread_t reader[READER_NUM];
@@ -116,6 +113,6 @@ static __inline__ void benchmark(void)
 
 int main(int argc, char *argv[])
 {
-    time_check_loop(benchmark(), 1000);
+    time_check_loop(benchmark(), TRACE_LOOP);
     return 0;
 }

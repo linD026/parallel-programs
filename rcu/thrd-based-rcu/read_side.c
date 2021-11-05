@@ -47,7 +47,7 @@ static void *reader_side(void *argv)
 {
     rcu_init();
 
-    time_check_loop(read_rcu(), 1000);
+    time_check_loop(read_rcu(), TRACE_LOOP);
 
     smp_mb();
 
@@ -69,9 +69,6 @@ static void *updater_side(void *argv)
 
     pthread_exit(NULL);
 }
-
-#define READER_NUM 10
-#define UPDATER_NUM 5
 
 static __inline__ void benchmark(void)
 {

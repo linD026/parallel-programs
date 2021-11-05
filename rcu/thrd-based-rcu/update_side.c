@@ -62,13 +62,10 @@ static __inline__ void update_rcu(void)
 
 static void *updater_side(void *argv)
 {
-    time_check_loop(update_rcu(), 1000);
+    time_check_loop(update_rcu(), TRACE_LOOP);
 
     pthread_exit(NULL);
 }
-
-#define READER_NUM 100
-#define UPDATER_NUM 5
 
 static __inline__ void benchmark(void)
 {

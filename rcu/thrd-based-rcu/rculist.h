@@ -23,9 +23,6 @@
 #include <stddef.h>
 #include "thrd_rcu.h"
 
-/* list add, list add tail, list del, list_del_tail, for each entry
- */
-
 #define container_of(ptr, type, member)                                        \
     __extension__({                                                            \
         const __typeof__(((type *)0)->member) *__mptr = (ptr);                 \

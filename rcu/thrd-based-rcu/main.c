@@ -41,7 +41,7 @@ static void *reader_side(void *argv)
 
     tmp = rcu_dereference(foo);
 
-    //printf("[reader %d] %d\n", current_tid(), tmp->count);
+    printf("[reader %d] %d\n", current_tid(), tmp->count);
 
     rcu_read_unlock();
 
@@ -54,7 +54,7 @@ static void *updater_side(void *argv)
     struct test *newval = (struct test *)malloc(sizeof(struct test));
     newval->count = current_tid();
 
-    //printf("[updater %d]\n", newval->count);
+    printf("[updater %d]\n", newval->count);
 
     oldp = rcu_assign_pointer(foo, newval);
 
@@ -64,9 +64,6 @@ static void *updater_side(void *argv)
     pthread_exit(NULL);
 }
 
-#define READER_NUM 10
-#define UPDATER_NUM 1
-
 static __inline__ void benchmark(void)
 {
     pthread_t reader[READER_NUM];
@@ -75,7 +72,6 @@ static __inline__ void benchmark(void)
     foo = (struct test __rcu *)malloc(sizeof(struct test));
     // reset the foo->count
     rcu_uncheck(foo)->count = 0;
-
 
     for (i = 0; i < READER_NUM / 2; i++)
         pthread_create(&reader[i], NULL, reader_side, NULL);
@@ -101,6 +97,6 @@ static __inline__ void benchmark(void)
 
 int main(int argc, char *argv[])
 {
-    time_check_loop(benchmark(), 1000);
+    time_check_loop(benchmark(), TRACE_LOOP);
     return 0;
 }
