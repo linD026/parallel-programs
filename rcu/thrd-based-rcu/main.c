@@ -41,7 +41,7 @@ static void *reader_side(void *argv)
 
     tmp = rcu_dereference(foo);
 
-    printf("[reader %d] %d\n", current_tid(), tmp->count);
+    //printf("[reader %d] %d\n", current_tid(), tmp->count);
 
     rcu_read_unlock();
 
@@ -54,7 +54,7 @@ static void *updater_side(void *argv)
     struct test *newval = (struct test *)malloc(sizeof(struct test));
     newval->count = current_tid();
 
-    printf("[updater %d]\n", newval->count);
+    //printf("[updater %d]\n", newval->count);
 
     oldp = rcu_assign_pointer(foo, newval);
 

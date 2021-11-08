@@ -13,6 +13,10 @@ cflags += -D'READER_NUM=$(READER_NUM)'
 cflags += -D'UPDATER_NUM=$(UPDATER_NUM)'
 cflags += -D'TRACE_LOOP=$(TRACE_LOOP)'
 
+ifeq ($(CONFIG_TRACE_TIME),y)
+cflags += -D'CONFIG_TRACE_TIME'
+endif
+
 all:
 	$(CC) -o test main.c $(cflags)
 
