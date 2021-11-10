@@ -1,17 +1,19 @@
 #!/usr/bin/bash
 
-YES="Y"
-yes="y"
-
-read -p "perf      [Y/N]: " PERF
+read -p "perf /trace time [p/t]: " OPT
 ls
-read -p "which directory: " DIR
+read -p "which directory : " DIR
 
-if [ $PERF == $YES ]  || [ $PERF == $yes ]
+if [ $OPT == 'p' ]  || [ $OPT == 'perf' ]
 then 
     PERF_COM='sudo perf stat --repeat 1000 -e cache-misses,cache-references,instructions,cycles'
+elif [ $OPT == 't' ] || [ $OPT  == 'trace time' ]
+then
+	PERF_COM=''
+	read -p "make " BENCHMARK
+	make -C $DIR $BENCHMARK CONFIG_TRACE_TIME=y 
 else
-    PERF_COM=''
+	PERF_COM=''
 fi
 
 $PERF_COM ./$DIR/test

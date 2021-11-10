@@ -14,7 +14,7 @@ cflags += -D'UPDATER_NUM=$(UPDATER_NUM)'
 cflags += -D'TRACE_LOOP=$(TRACE_LOOP)'
 
 ifeq ($(CONFIG_TRACE_TIME),y)
-clfags += -D'CONFIG_TRACE_TIME'
+cflags += -D'CONFIG_TRACE_TIME'
 endif
 
 all:
