@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 make -C locked-rcu read
 make -C thrd-based-rcu read
