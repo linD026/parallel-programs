@@ -108,12 +108,16 @@ static __inline__ void *__lrcu_collect_old_pointer(struct lrcu_data *lrcu_data,
 
 static __inline__ void lrcu_read_lock(void)
 {
+#ifdef CONFIG_PREEMPTION
     preempt_disable();
+#endif
 }
 
 static __inline__ void lrcu_read_unlock(void)
 {
+#ifdef CONFIG_PREEMPTION
     preempt_enable();
+#endif
 }
 
 #include <linux/kprobes.h>
