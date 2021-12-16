@@ -58,7 +58,7 @@ static inline void write_sequnlock(seqlock_t *lock)
 /* return the seq number for this time read
  * The seqcount must be even at beginning of the read side critical section.
  */
-static inline void read_seqbegin(seqlock_t *lock)
+static inline int read_seqbegin(seqlock_t *lock)
 {
     int seq;
     do {
