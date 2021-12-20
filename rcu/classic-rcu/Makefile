@@ -22,4 +22,4 @@ clean:
 	$(MAKE) -C /lib/modules/$(shell uname -r)/build CC=$(CC) M=$(PWD) clean
 
 indent:
-	clang-format -i *[.ch]
+	clang-format -i *.[ch]
