@@ -36,40 +36,36 @@ static void __trace_time_print(struct trace_time *trace)
         __tt;                                               \
     })
 
-#define TRACE_TIME_START(t)                                 \
-    do {                                                    \
-        if (atomic_read(&__trace_time_cnt) < TRACE_LIMIT && \
-            (t).flag == TRACE_NOTHING) {                    \
-            (t).start = ktime_get();                        \
-            (t).flag = TRACE_START;                         \
-        }                                                   \
+#define TRACE_TIME_START(t)                                          \
+    do {                                                             \
+        if ((t).number < TRACE_LIMIT && (t).flag == TRACE_NOTHING) { \
+            (t).start = ktime_get();                                 \
+            (t).flag = TRACE_START;                                  \
+        }                                                            \
     } while (0)
 
-#define TRACE_TIME_END(t)                                   \
-    do {                                                    \
-        if (atomic_read(&__trace_time_cnt) < TRACE_LIMIT && \
-            (t).flag == TRACE_START) {                      \
-            (t).end = ktime_get();                          \
-            (t).flag = TRACE_END;                           \
-        }                                                   \
+#define TRACE_TIME_END(t)                                          \
+    do {                                                           \
+        if ((t).number < TRACE_LIMIT && (t).flag == TRACE_START) { \
+            (t).end = ktime_get();                                 \
+            (t).flag = TRACE_END;                                  \
+        }                                                          \
     } while (0)
 
 #define TRACE_CALC(t)                                                \
     do {                                                             \
-        if (atomic_read(&__trace_time_cnt) < TRACE_LIMIT &&          \
-            (t).flag == TRACE_END) {                                 \
+        if ((t).number < TRACE_LIMIT && (t).flag == TRACE_END) {     \
             (t).during = ktime_to_ns(ktime_sub((t).end, (t).start)); \
             (t).flag = TRACE_FINISH;                                 \
         }                                                            \
     } while (0)
 
-#define TRACE_PRINT(t)                                      \
-    do {                                                    \
-        if (atomic_read(&__trace_time_cnt) < TRACE_LIMIT && \
-            (t).flag == TRACE_FINISH) {                     \
-            __trace_time_print(&(t));                       \
-            (t).flag = TRACE_NOTHING;                       \
-        }                                                   \
+#define TRACE_PRINT(t)                                              \
+    do {                                                            \
+        if ((t).number < TRACE_LIMIT && (t).flag == TRACE_FINISH) { \
+            __trace_time_print(&(t));                               \
+            (t).flag = TRACE_NOTHING;                               \
+        }                                                           \
     } while (0)
 
 #endif /*__TRACE_TIME_H__ */
