@@ -137,6 +137,8 @@ static int __init lrcu_init(void)
     for (i = 0; i < NR_TOTAL; i++)
         wake_up_process(t[i].task);
 
+    call_lrcu(lrcu_data);
+
     return 0;
 }
 
@@ -144,12 +146,8 @@ static void __exit lrcu_exit(void)
 {
     lrcu_assign_pointer(gp, NULL, lrcu_data);
 
-    /* the call_lrcu() won't work at .data storage class because
-     * of the .data storage cannot pass to the other threads.
-     * So use __call_lrcu() which is not asynchronous API.
-     */
-    call_lrcu(lrcu_data);
-
+    synchronize_lrcu(lrcu_data);
+    kfree(lrcu_data);
     kfree(t);
 }
 
