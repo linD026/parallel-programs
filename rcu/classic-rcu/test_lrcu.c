@@ -89,12 +89,16 @@ static void lrcu_call_back(void *data)
 #define NR_READ_SIDE 20
 #define NR_UPDATE_BESIDE 5
 #define NR_TOTAL (NR_READ_SIDE + (NR_READ_SIDE / NR_UPDATE_BESIDE))
-static DEFINE_LRCU(lrcu_data, lrcu_call_back);
+struct lrcu_data *lrcu_data;
 static struct test_lrcu *t;
 
 static int __init lrcu_init(void)
 {
     int i, *setp;
+
+    lrcu_data = lrcu_data_init(lrcu_call_back);
+    if (!lrcu_data)
+        return -1;
 
     i = lrcu_sched_init();
     if (i != 0)
@@ -120,7 +124,7 @@ static int __init lrcu_init(void)
 
     for (i = 0; i < NR_TOTAL; i++) {
         t[i].tid = i;
-        t[i].ld = &lrcu_data;
+        t[i].ld = lrcu_data;
         if (i % NR_UPDATE_BESIDE == 0) {
             t[i].task = kthread_create(update_side, (void *)&t[i],
                                        "kthread: LRCU update side");
@@ -138,13 +142,13 @@ static int __init lrcu_init(void)
 
 static void __exit lrcu_exit(void)
 {
-    lrcu_assign_pointer(gp, NULL, &lrcu_data);
+    lrcu_assign_pointer(gp, NULL, lrcu_data);
 
     /* the call_lrcu() won't work at .data storage class because
      * of the .data storage cannot pass to the other threads.
      * So use __call_lrcu() which is not asynchronous API.
      */
-    __call_lrcu((void *)&lrcu_data);
+    call_lrcu(lrcu_data);
 
     kfree(t);
 }

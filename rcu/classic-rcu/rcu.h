@@ -45,10 +45,15 @@ struct lrcu_data {
     lrcu_callback_t callback;
 };
 
-#define DEFINE_LRCU(name, call_back)                                    \
-    struct lrcu_data name = { .list_lock =                              \
-                                  __SPIN_LOCK_UNLOCKED(name.list_lock), \
-                              .callback = call_back }
+static __inline__ struct lrcu_data *lrcu_data_init(lrcu_callback_t cb)
+{
+    struct lrcu_data *ldp = kmalloc(sizeof(struct lrcu_data), GFP_KERNEL);
+    if (!ldp)
+        return NULL;
+    spin_lock_init(&ldp->list_lock);
+    ldp->callback = cb;
+    return ldp;
+}
 
 static __inline__ void *__lrcu_collect_old_pointer(struct lrcu_data *lrcu_data,
                                                    void __lrcu *oldp)
@@ -180,22 +185,9 @@ static __inline__ int __call_lrcu(void *data)
 
     smp_mb();
 
-    return 0;
-    //do_exit(0);
+    do_exit(0);
 }
 
-/* TODO: Fix the .data storage problem
- * the lrcu_data only provide the .data sotrage class, it cannot pass
- * to another thread.
- * It will be like:
- * 
- * struct lrcu_data *p = kmalloc();
- * lrcu_data_init(p);
- * do_some_thing();
- * call_lrcu(p);
- * all_finish();
- * kfree(p);
- */
 static __inline__ void call_lrcu(struct lrcu_data *lrcu_data)
 {
     smp_mb();
