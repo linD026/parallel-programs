@@ -45,9 +45,9 @@ struct lrcu_data {
     lrcu_callback_t callback;
 };
 
-#define DEFINE_LRCU(name, call_back)                                        \
-    struct lrcu_data name = { .list_lock =                                  \
-                                      __SPIN_LOCK_UNLOCKED(name.list_lock), \
+#define DEFINE_LRCU(name, call_back)                                    \
+    struct lrcu_data name = { .list_lock =                              \
+                                  __SPIN_LOCK_UNLOCKED(name.list_lock), \
                               .callback = call_back }
 
 static __inline__ void *__lrcu_collect_old_pointer(struct lrcu_data *lrcu_data,
@@ -80,19 +80,19 @@ static __inline__ void *__lrcu_collect_old_pointer(struct lrcu_data *lrcu_data,
  * 
  * The READ_ONCE(__l_r_rev) is to prevent the compiler optimization.
  */
-#define lrcu_assign_pointer(oldp, newp, ldp)                             \
-    ({                                                                   \
-        uintptr_t __l_r_rev;                                             \
-        lrcu_check_sparse(oldp, __lrcu);                                 \
-                                                                         \
-        __l_r_rev = (uintptr_t)__lrcu_collect_old_pointer(               \
-                (ldp), (void __lrcu *)oldp);                             \
-        if (READ_ONCE(__l_r_rev))                                        \
-            smp_store_release(&oldp,                                     \
-                              (typeof(*(oldp)) __force __lrcu *)(newp)); \
-                                                                         \
-        spin_unlock(&(ldp)->list_lock);                                  \
-        (typeof(*oldp) *)__l_r_rev;                                      \
+#define lrcu_assign_pointer(oldp, newp, ldp)                                   \
+    ({                                                                         \
+        uintptr_t __l_r_rev;                                                   \
+        lrcu_check_sparse(oldp, __lrcu);                                       \
+                                                                               \
+        __l_r_rev =                                                            \
+            (uintptr_t)__lrcu_collect_old_pointer((ldp), (void __lrcu *)oldp); \
+        if (READ_ONCE(__l_r_rev))                                              \
+            smp_store_release(&oldp,                                           \
+                              (typeof(*(oldp)) __force __lrcu *)(newp));       \
+                                                                               \
+        spin_unlock(&(ldp)->list_lock);                                        \
+        (typeof(*oldp) *)__l_r_rev;                                            \
     })
 
 /* lrcu_dereference() - dereference the LRCU-portected pointer
@@ -132,8 +132,8 @@ static __inline__ int lrcu_sched_init(void)
     kallsyms_lookup_name = (unsigned long (*)(const char *name))kp.addr;
     unregister_kprobe(&kp);
     lrcu_sched_setaffinity =
-            (long (*)(pid_t, const struct cpumask *))kallsyms_lookup_name(
-                    "sched_setaffinity");
+        (long (*)(pid_t, const struct cpumask *))kallsyms_lookup_name(
+            "sched_setaffinity");
 
     return 0;
 }
@@ -180,7 +180,8 @@ static __inline__ int __call_lrcu(void *data)
 
     smp_mb();
 
-    do_exit(0);
+    return 0;
+    //do_exit(0);
 }
 
 /* TODO: Fix the .data storage problem

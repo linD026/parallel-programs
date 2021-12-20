@@ -23,6 +23,7 @@
 #include <linux/slab.h>
 #include <linux/kthread.h>
 
+#include "trace_time.h"
 #include "rcu.h"
 
 struct test_lrcu {
@@ -52,6 +53,8 @@ static int read_side(void *data)
     return 0;
 }
 
+struct trace_time trace_update;
+
 static int update_side(void *data)
 {
     struct test *oldp, *newp;
@@ -68,7 +71,11 @@ static int update_side(void *data)
     if (oldp == NULL)
         return -1;
 
+    TRACE_TIME_START(trace_update);
     synchronize_lrcu(test_info->ld);
+    TRACE_TIME_END(trace_update);
+    TRACE_CALC(trace_update);
+    TRACE_PRINT(trace_update);
     kfree(oldp);
 
     return 0;
@@ -109,7 +116,7 @@ static int __init lrcu_init(void)
     setp = (int __force *)&gp->val;
     *setp = -1;
 
-    smp_mb();
+    trace_update = TRACE_TIME_INIT("trace lrcu");
 
     for (i = 0; i < NR_TOTAL; i++) {
         t[i].tid = i;
@@ -129,7 +136,7 @@ static int __init lrcu_init(void)
     return 0;
 }
 
-static void lrcu_exit(void)
+static void __exit lrcu_exit(void)
 {
     lrcu_assign_pointer(gp, NULL, &lrcu_data);
 
