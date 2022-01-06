@@ -1,0 +1,6 @@
+§ Transaction-based model of memory
+	– Interface:
+		start transaction(); read/write data commit transaction():
+	– If conflicts detected, commit will abort and must be retried – What is a conflict?
+		» If values you read are written by others before commit § Hardware support for transactions
+	– Typically uses cache coherence protocol to help process
