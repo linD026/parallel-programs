@@ -30,7 +30,7 @@
 
 ### Skip List
 - **ref**:
-    - The cache friendly concurrency skiplist in the kernel space
-    contributed by Liu Bo and Fusion-io.
+    - The cache friendly concurrency skiplist in the kernel space.
+      It is from Liu Bo and Fusion-io.
 - **src**:
     - The sequential program skiplist in userspace.
