@@ -71,7 +71,7 @@ static int __init test_rcu_init(void)
     int i, *setp;
 
     t = (struct test_rcu *)kmalloc(sizeof(struct test_rcu) * NR_TOTAL,
-                                    GFP_KERNEL);
+                                   GFP_KERNEL);
     if (t == NULL) {
         pr_alert("lrcu_init: t kmalloc failed\n");
         return -ENOMEM;
@@ -98,7 +98,6 @@ static int __init test_rcu_init(void)
                                        "kthread: LRCU read side");
         }
     }
-
 
     for (i = 0; i < NR_TOTAL; i++)
         wake_up_process(t[i].task);

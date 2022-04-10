@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
 make all
-for i in {1..100};
-do
-    make rcu
-    sleep 1 
+for i in {1..10}; do
+    make lrcu
+    sleep 1
 done

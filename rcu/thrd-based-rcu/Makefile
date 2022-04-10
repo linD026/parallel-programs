@@ -34,4 +34,4 @@ clean:
 	rm -rf test.dSYM
 
 indent:
-	clang-format -i *[.ch]
+	clang-format -i *.[ch]
