@@ -22,8 +22,7 @@
 #ifndef __RCU_COMMON_API_H__
 #define __RCU_COMMON_API_H__
 
-/* lock primitives from pthread and compiler primitives
- */
+/* lock primitives from pthread and compiler primitives */
 
 #include <pthread.h>
 
@@ -38,7 +37,7 @@ static __inline__ void spin_lock_init(spinlock_t *sp)
 
     ret = pthread_mutex_init(sp, NULL);
     if (ret != 0) {
-        fprintf(stderr, "spin_lock_init::pthread_mutex_init %d\n", ret);
+        fprintf(stderr, "spin_lock_init:pthread_mutex_init %d\n", ret);
         abort();
     }
 }
@@ -76,15 +75,12 @@ static __inline__ void spin_unlock(spinlock_t *sp)
         ACCESS_ONCE(x) = (val); \
     } while (0)
 #define barrier() __asm__ __volatile__("" : : : "memory")
-
 #define __allow_unused __attribute__((unused))
-
 #define smp_mb() __asm__ __volatile__("mfence" : : : "memory")
-
 #if defined(__linux__)
 #define current_tid() (int)gettid()
 #else
-#define current_tid() 0xFFFFFF & (unsigned long)pthread_self()
+#define current_tid() (int)pthread_self()
 #endif
 
 #endif /* __RCU_COMMON_API_H__ */
