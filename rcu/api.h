@@ -77,10 +77,7 @@ static __inline__ void spin_unlock(spinlock_t *sp)
 #define barrier() __asm__ __volatile__("" : : : "memory")
 #define __allow_unused __attribute__((unused))
 #define smp_mb() __asm__ __volatile__("mfence" : : : "memory")
-#if defined(__linux__)
-#define current_tid() (int)gettid()
-#else
-#define current_tid() (int)pthread_self()
-#endif
+
+#define current_tid() (unsigned int)pthread_self()
 
 #endif /* __RCU_COMMON_API_H__ */

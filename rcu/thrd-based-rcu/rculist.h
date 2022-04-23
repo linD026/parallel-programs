@@ -23,12 +23,12 @@
 #include <stddef.h>
 #include "thrd_rcu.h"
 
-#define container_of(ptr, type, member)                                        \
-    __extension__({                                                            \
-        const __typeof__(((type *)0)->member) *__mptr = (ptr);                 \
-        (type *)((char *)__mptr - offsetof(type, member));                     \
+#define container_of(ptr, type, member)                        \
+    __extension__({                                            \
+        const __typeof__(((type *)0)->member) *__mptr = (ptr); \
+        (type *)((char *)__mptr - offsetof(type, member));     \
     })
-#define list_entry_rcu(ptr, type, member)                                      \
+#define list_entry_rcu(ptr, type, member) \
     container_of(READ_ONCE(ptr), type, member)
 
 #define list_next_rcu(n) (*((struct list_head __rcu **)(&(n)->next)))
@@ -84,8 +84,8 @@ static inline void list_del_rcu(struct list_head *node)
 
 #define list_for_each_from(pos, head) for (; pos != (head); pos = pos->next)
 
-#define list_for_each_safe(pos, n, head)                                       \
-    for (pos = (head)->next, n = pos->next; pos != (head);                     \
+#define list_for_each_safe(pos, n, head)                   \
+    for (pos = (head)->next, n = pos->next; pos != (head); \
          pos = n, n = pos->next)
 
 #endif /* __RCULIST_H__ */

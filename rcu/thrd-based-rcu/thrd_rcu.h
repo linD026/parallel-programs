@@ -24,7 +24,6 @@
 #ifndef __THRD_RCU_H__
 #define __THRD_RCU_H__
 
-#include <pthread.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -49,7 +48,7 @@
 #define __rcu_aligned __attribute__((aligned(128)))
 
 struct rcu_node {
-    pthread_t tid;
+    unsigned int tid;
     int rcu_nesting[2];
     struct rcu_node *next;
 } __rcu_aligned;
@@ -63,7 +62,7 @@ struct rcu_data {
 
 /* Easy to use */
 #define __rcu_thrd_idx rcu_data.rcu_thrd_nesting_idx
-#define __rcu_thrd_nesting(ptr)                                                \
+#define __rcu_thrd_nesting(ptr) \
     ptr->rcu_nesting[READ_ONCE(__rcu_thrd_idx) & 0x01]
 #define rcu_thrd_nesting __rcu_thrd_nesting(__rcu_per_thrd_ptr)
 
@@ -73,7 +72,7 @@ static struct rcu_data rcu_data = { .nr_thread = 0,
                                     .sp = SPINLOCK_INIT };
 static __thread struct rcu_node *__rcu_per_thrd_ptr;
 
-static __inline__ struct rcu_node *__rcu_node_add(pthread_t tid)
+static __inline__ struct rcu_node *__rcu_node_add(unsigned int tid)
 {
     struct rcu_node **indirect = &rcu_data.head;
     struct rcu_node *node;
@@ -112,7 +111,7 @@ static __inline__ struct rcu_node *__rcu_node_add(pthread_t tid)
 
 static __inline__ int rcu_init(void)
 {
-    pthread_t tid = pthread_self();
+    unsigned int tid = current_tid();
 
     __rcu_per_thrd_ptr = __rcu_node_add(tid);
 
@@ -183,21 +182,20 @@ static __inline__ void synchronize_rcu(void)
     __atomic_thread_fence(__ATOMIC_SEQ_CST);
 }
 
-#define rcu_dereference(p)                                                     \
-    ({                                                                         \
-        __typeof__(*p) *__r_d_p = (__typeof__(*p) __force *)READ_ONCE(p);      \
-        rcu_check_sparse(p, __rcu);                                            \
-        __r_d_p;                                                               \
+#define rcu_dereference(p)                                                \
+    ({                                                                    \
+        __typeof__(*p) *__r_d_p = (__typeof__(*p) __force *)READ_ONCE(p); \
+        rcu_check_sparse(p, __rcu);                                       \
+        __r_d_p;                                                          \
     })
 
-#define rcu_assign_pointer(p, v)                                               \
-    ({                                                                         \
-        __typeof__(*p) *__r_a_p =                                              \
-                (__typeof__(*p) __force *)__atomic_exchange_n(                 \
-                        &(p), (__typeof__(*(p)) __force __rcu *)v,             \
-                        __ATOMIC_RELEASE);                                     \
-        rcu_check_sparse(p, __rcu);                                            \
-        __r_a_p;                                                               \
+#define rcu_assign_pointer(p, v)                                              \
+    ({                                                                        \
+        __typeof__(*p) *__r_a_p =                                             \
+            (__typeof__(*p) __force *)__atomic_exchange_n(                    \
+                &(p), (__typeof__(*(p)) __force __rcu *)v, __ATOMIC_RELEASE); \
+        rcu_check_sparse(p, __rcu);                                           \
+        __r_a_p;                                                              \
     })
 
 #endif /* __THRD_RCU_H__ */
