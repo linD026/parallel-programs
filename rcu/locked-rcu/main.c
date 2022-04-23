@@ -20,8 +20,6 @@
  * Copyright (C) 2021 linD026
  */
 
-#define _GNU_SOURCE
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
