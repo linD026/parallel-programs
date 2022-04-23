@@ -45,8 +45,7 @@
 #define rcu_check(p) p
 #endif /* __CHECKER__ */
 
-/* Avoid false sharing
- */
+/* Avoid false sharing */
 #define __rcu_aligned __attribute__((aligned(128)))
 
 struct rcu_node {
@@ -62,7 +61,7 @@ struct rcu_data {
     spinlock_t sp;
 };
 
-// Easly to use it.
+/* Easy to use */
 #define __rcu_thrd_idx rcu_data.rcu_thrd_nesting_idx
 #define __rcu_thrd_nesting(ptr)                                                \
     ptr->rcu_nesting[READ_ONCE(__rcu_thrd_idx) & 0x01]
@@ -139,8 +138,8 @@ static __inline__ void rcu_clean(void)
     spin_unlock(&rcu_data.sp);
 }
 
-/* The per-thread reference count will only modified by their owner thread,
- * but will read by other thread. So here we use WRITE_ONCE
+/* The per-thread reference count will only modified by their owner
+ * thread but will read by other threads. So here we use WRITE_ONCE().
  */
 static __inline__ void rcu_read_lock(void)
 {
@@ -162,9 +161,9 @@ static __inline__ void synchronize_rcu(void)
 
     spin_lock(&rcu_data.sp);
 
-    /* When the rcu_thrd_nesting is odd, which mean that the lsb is being set
-     * 1, that thread is in the read critical section. Also, we need to skip
-     * the read side when it is in the new grace period.
+    /* When the rcu_thrd_nesting is odd, which means that the LSB set 1,
+     * that thread is in the read-side critical section. Also, we need
+     * to skip the read side when it is in the new grace period.
      */
     for (node = rcu_data.head; node != NULL; node = node->next) {
         while (READ_ONCE(__rcu_thrd_nesting(node)) & 0x1) {
@@ -176,8 +175,7 @@ static __inline__ void synchronize_rcu(void)
         }
     }
 
-    /* Going to next grace period
-     */
+    /* Going to next grace period */
     __atomic_fetch_add(&__rcu_thrd_idx, 1, __ATOMIC_RELEASE);
 
     spin_unlock(&rcu_data.sp);
