@@ -48,6 +48,7 @@ static inline void barrier(struct barrier *b, size_t n)
     pthread_mutex_lock(&b->lock);
     b->count++;
     if (b->count == n) {
+        b->count = 0;
         pthread_mutex_unlock(&b->lock);
         __atomic_store_n(&b->flag, local_sense, __ATOMIC_RELEASE);
     } else {
