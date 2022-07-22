@@ -4,3 +4,19 @@
 	– If conflicts detected, commit will abort and must be retried – What is a conflict?
 		» If values you read are written by others before commit § Hardware support for transactions
 	– Typically uses cache coherence protocol to help process
+
+TODO:
+
+A. Dragovejic, P. Felber, V. Gramoli, and R. Guerraoui, “Why STM
+Can Be More than a Research Toy,” http://infoscience.epfl.ch/
+record/144052/files/paper.pdf, Feb. 2010.
+
+H. Chafi, J. Casper, B.D. Carlstrom, A. McDonald, C.C. Minh, W.
+Baek, C. Kozyrakis, and K. Olukotun, “A Scalable, Non-Blocking
+Approach to Transactional Memory,” Proc. IEEE 13th Int’l Symp.
+High Performance Computer Architecture (HPCA), pp. 97-108, 2007.
+
+S.H. Pugsley, M. Awasthi, N. Madan, N. Muralimanohar, and R.
+Balasubramonian, “Scalable and Reliable Communication for
+Hardware Transactional Memory,” Proc. 17th Int’l Conf. Parallel
+Architectures and Compilation Techniques (PACT), pp. 144-154, 2008.
